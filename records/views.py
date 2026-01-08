@@ -1,6 +1,7 @@
 from django.db import transaction
 import logging
 from typing import Optional, cast
+import requests
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -154,6 +155,67 @@ def mucosa_registro(request):
     patient: Patient = cast(Patient, ps.save())
     logger.info("Paciente %s: id=%s dni=%s", "ACTUALIZADO" if existed else "CREADO", patient.id, patient.dni)
 
+    # ===== Completar dirección con reverse geocoding si tiene coordenadas =====
+    lat = dp.get("lat")
+    lng = dp.get("lng")
+    
+    if lat and lng:
+        try:
+            lat_float = float(lat)
+            lng_float = float(lng)
+            
+            # Solo hacer reverse geocoding si faltan datos de dirección
+            needs_geocoding = not all([patient.region, patient.provincia, patient.distrito, patient.direccion])
+            
+            if needs_geocoding:
+                logger.info("Intentando completar dirección automáticamente para paciente %s (lat=%s, lng=%s)", 
+                           patient.dni, lat_float, lng_float)
+                try:
+                    # Usar OpenStreetMap Nominatim (servicio gratuito de geocoding)
+                    url = "https://nominatim.openstreetmap.org/reverse"
+                    params = {
+                        "lat": lat_float,
+                        "lon": lng_float,
+                        "format": "json",
+                        "addressdetails": 1,
+                    }
+                    headers = {"User-Agent": "MucosaView/1.0"}
+                    
+                    resp = requests.get(url, params=params, headers=headers, timeout=5)
+                    if resp.status_code == 200:
+                        addr = resp.json().get("address", {})
+                        
+                        # Actualizar solo campos vacíos (no sobreescribir datos manuales)
+                        updated_fields = []
+                        if not patient.region and addr.get("state"):
+                            patient.region = addr["state"]
+                            updated_fields.append("region")
+                        if not patient.provincia and (addr.get("city") or addr.get("province")):
+                            patient.provincia = addr.get("city") or addr.get("province") or ""
+                            updated_fields.append("provincia")
+                        if not patient.distrito and (addr.get("suburb") or addr.get("town")):
+                            patient.distrito = addr.get("suburb") or addr.get("town") or ""
+                            updated_fields.append("distrito")
+                        if not patient.direccion and addr.get("road"):
+                            road = addr.get("road", "")
+                            house = addr.get("house_number", "")
+                            patient.direccion = f"{road} {house}".strip()
+                            updated_fields.append("direccion")
+                        
+                        if updated_fields:
+                            patient.save()
+                            logger.info("Dirección completada automáticamente para paciente %s. Campos: %s", 
+                                       patient.dni, ", ".join(updated_fields))
+                    else:
+                        logger.warning("Geocoding falló con status %s para paciente %s", resp.status_code, patient.dni)
+                except requests.exceptions.RequestException as e:
+                    logger.warning("Error de red en geocoding para paciente %s: %s", patient.dni, e)
+                except Exception as e:
+                    logger.warning("Error inesperado en geocoding para paciente %s: %s", patient.dni, e)
+        except (ValueError, TypeError) as e:
+            logger.warning("Coordenadas inválidas para paciente %s: lat=%s lng=%s. Error: %s", 
+                          patient.dni, lat, lng, e)
+
     # ===== Crear visita =====
     bpm_val = dobs.get("pulsaciones")
     hb_val = dobs.get("hemoglobina")
@@ -217,8 +279,9 @@ def mucosa_fotos(request, dni: str):
                         status=status.HTTP_400_BAD_REQUEST)
 
     photo_type = request.data.get("type")
-    if photo_type not in ("CONJ", "LAB"):
-        return Response({"type": ["Debe ser 'CONJ' o 'LAB'."]},
+    if photo_type not in ("CONJ", "LAB", "IND"):
+        logger.warning("Tipo de foto inválido: %s (debe ser CONJ, LAB o IND)", photo_type)
+        return Response({"type": ["Debe ser 'CONJ', 'LAB' o 'IND'."]},
                         status=status.HTTP_400_BAD_REQUEST)
 
     try:
@@ -239,6 +302,7 @@ def mucosa_fotos(request, dni: str):
 
     phs = PhotoSerializer(data={**photo_payload, "file": uploaded})
     if not phs.is_valid():
+        logger.warning("Error de validación de foto para DNI %s: %s", dni, phs.errors)
         return Response(phs.errors, status=status.HTTP_400_BAD_REQUEST)
 
     photo: Photo = cast(Photo, phs.save())  # <- cast para callar a Pylance

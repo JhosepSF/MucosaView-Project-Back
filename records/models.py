@@ -57,7 +57,12 @@ class Visit(models.Model):
 
 def photo_upload_to(instance, filename):
     dni = instance.visit.patient.dni
-    tipo = "Conjuntiva" if instance.type == Photo.TYPE_CONJ else "Labio"
+    if instance.type == Photo.TYPE_CONJ:
+        tipo = "Conjuntiva"
+    elif instance.type == Photo.TYPE_LAB:
+        tipo = "Labio"
+    else:
+        tipo = "Indice"
     v = instance.visit.visit_number
     n = instance.index
     ext = Path(filename).suffix.lower()
@@ -67,9 +72,11 @@ def photo_upload_to(instance, filename):
 class Photo(models.Model):
     TYPE_CONJ = "CONJ"
     TYPE_LAB = "LAB"
+    TYPE_INDICE = "IND"
     TYPE_CHOICES = [
         (TYPE_CONJ, "Conjuntiva"),
         (TYPE_LAB, "Labio"),
+        (TYPE_INDICE, "Índice"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

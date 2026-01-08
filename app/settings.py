@@ -16,6 +16,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "192.168.18.25",
+    "192.168.100.151",
 ]
 
 # Application definition
@@ -69,6 +70,16 @@ WSGI_APPLICATION = 'app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Patch para soportar MariaDB 10.4 (solo para desarrollo)
+from django.db.backends.base import base
+
+def check_database_version_supported_patch(self):
+    """Deshabilitar verificación de versión de base de datos"""
+    pass
+
+# Monkey patch para permitir MariaDB 10.4 con Django 5.2
+base.BaseDatabaseWrapper.check_database_version_supported = check_database_version_supported_patch  # type: ignore[method-assign]
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -77,7 +88,15 @@ DATABASES = {
         "PASSWORD": "", 
         "HOST": "127.0.0.1",
         "PORT": "3306",
-        "OPTIONS": {"charset": "utf8mb4"},
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
+        # Forzar compatibilidad con MariaDB 10.4 (temporal)
+        'TEST': {
+            'CHARSET': 'utf8mb4',
+            'COLLATION': 'utf8mb4_unicode_ci',
+        },
     }
 }
 

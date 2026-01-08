@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from records.views import PatientViewSet, VisitViewSet, PhotoViewSet, media_by_hash, mucosa_registro, mucosa_fotos, mucosa_visita
 
@@ -16,3 +18,7 @@ urlpatterns = [
     path("api/mucosa/registro/<str:dni>/fotos", mucosa_fotos),
     path("api/mucosa/registro/<str:dni>/visita", mucosa_visita), 
 ]
+
+# Servir archivos media en desarrollo
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
