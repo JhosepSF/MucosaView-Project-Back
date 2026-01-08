@@ -570,13 +570,6 @@ http://localhost:8000/admin/
 - ✅ SQL injection protection (ORM)
 - ✅ Idempotencia con UUIDs
 
-### Pendiente (Producción)
-- ⚠️ Autenticación (JWT/OAuth2)
-- ⚠️ Autorización (permisos por rol)
-- ⚠️ Rate limiting
-- ⚠️ HTTPS obligatorio
-- ⚠️ Validación de tamaño de archivos
-
 ## 🧪 Testing
 ```bash
 # Ejecutar tests
@@ -644,7 +637,6 @@ Este proyecto es parte de un trabajo académico.
 Para más información:
 - **Frontend README**: [App Móvil](https://github.com/JhosepSF/MucosaView-Project-Front)
 - **Issues**: Reportar en GitHub Issues
-- **Documentación**: Ver `/docs`
 
 ## 🔄 Versiones
 - **v1.0.0** - API REST completa con soporte offline-first
