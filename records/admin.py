@@ -148,7 +148,7 @@ class PhotoAdmin(admin.ModelAdmin):
         if obj.size:
             mb = obj.size / (1024 * 1024)
             color = "#27ae60" if mb < 2 else "#e67e22"
-            return format_html('<span style="color: {};">{:.2f} MB</span>', color, mb)
+            return format_html('<span style="color: {};">{} MB</span>', color, f'{mb:.2f}')
         return "-"
     tamano.short_description = "Tamaño"
     
