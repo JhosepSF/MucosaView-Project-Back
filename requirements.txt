@@ -1,6 +1,8 @@
 Django==5.2
 djangorestframework
 django-cors-headers
+django-storages
+boto3
 mysqlclient==2.2.7
 Pillow
 requests
