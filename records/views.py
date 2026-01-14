@@ -254,24 +254,43 @@ def mucosa_fotos(request, dni: str):
     """
     Espera form-data:
       - file: imagen (obligatorio)
-      - type: CONJ | LAB (obligatorio)
+      - type: CONJ | LAB | IND (obligatorio)
+      - nro_visita: int (opcional, si no se proporciona usa la visita más reciente)
       - index: int (opcional, default 1)
       - original_name, content_type: opcional
     """
     # Tipado explícito para Pylance
     patient: Patient = cast(Patient, get_object_or_404(Patient, dni=str(dni).strip()))
 
-    # Evita usar patient.visits si el linter molesta; ve directo por el modelo Visit
-    visit: Optional[Visit] = (
-        Visit.objects.filter(patient=patient)
-        .order_by("-created_at")
-        .first()
-    )
-    if visit is None:
-        return Response(
-            {"detail": "El paciente no tiene visitas para adjuntar fotos."},
-            status=status.HTTP_400_BAD_REQUEST,
+    # Buscar visita: si nro_visita se proporciona, úsalo; sino, la más reciente
+    nro_visita_str = request.data.get("nro_visita")
+    if nro_visita_str:
+        try:
+            nro_visita = int(nro_visita_str)
+            visit: Optional[Visit] = Visit.objects.filter(
+                patient=patient, visit_number=nro_visita
+            ).first()
+            if visit is None:
+                return Response(
+                    {"detail": f"No existe visita {nro_visita} para este paciente."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except ValueError:
+            return Response(
+                {"nro_visita": ["Debe ser un número entero."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        visit: Optional[Visit] = (
+            Visit.objects.filter(patient=patient)
+            .order_by("-created_at")
+            .first()
         )
+        if visit is None:
+            return Response(
+                {"detail": "El paciente no tiene visitas para adjuntar fotos."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     uploaded = request.FILES.get("file")
     if not uploaded:
