@@ -16,6 +16,16 @@ from .serializers import PatientSerializer, VisitSerializer, PhotoSerializer
 
 logger = logging.getLogger("records") 
 
+
+def _coerce_float(x):
+    """Convierte a float normalizando comas por puntos. Acepta None y strings vacíos."""
+    if x in (None, ""):
+        return None
+    # Normalizar: reemplazar coma por punto para decimales
+    x_str = str(x).replace(',', '.')
+    return float(x_str)
+
+
 class Conflict(APIException):
     status_code = status.HTTP_412_PRECONDITION_FAILED
     default_detail = "ETag does not match current resource version."
@@ -98,6 +108,33 @@ class PhotoViewSet(IdempotentUpsertMixin, viewsets.ModelViewSet):
 def media_by_hash(request, sha256: str):
     exists = Photo.objects.filter(sha256=sha256).exists()
     return Response(status=status.HTTP_200_OK if exists else status.HTTP_404_NOT_FOUND)
+
+@api_view(["GET"])
+@drf_permission_classes([AllowAny])
+def paciente_info(request, dni: str):
+    """
+    GET /api/mucosa/registro/{dni}/info
+    Devuelve información del paciente y el siguiente número de visita.
+    Responde: { dni, nombre, apellido, total_visitas, siguiente_visita }
+    Si el paciente no existe: 404
+    """
+    try:
+        patient = Patient.objects.get(dni=str(dni).strip())
+        total_visitas = Visit.objects.filter(patient=patient).count()
+        siguiente_visita = total_visitas + 1
+        
+        return Response({
+            "dni": patient.dni,
+            "nombre": patient.nombre,
+            "apellido": patient.apellido,
+            "total_visitas": total_visitas,
+            "siguiente_visita": siguiente_visita,
+        }, status=status.HTTP_200_OK)
+    except Patient.DoesNotExist:
+        return Response(
+            {"detail": f"No existe paciente con DNI {dni}"},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
 @api_view(["POST"])
 @drf_permission_classes([AllowAny])
@@ -220,17 +257,21 @@ def mucosa_registro(request):
     bpm_val = dobs.get("pulsaciones")
     hb_val = dobs.get("hemoglobina")
     spo2_val = dobs.get("oxigeno")
+    lmp_date = dobs.get("fechaUltimoPeriodo")
     
-    # Normalizar hemoglobina: reemplazar coma por punto
-    if hb_val not in (None, ""):
-        hb_val = str(hb_val).replace(',', '.')
+    # Si no viene lmp_date, reutilizar de visita anterior del mismo paciente
+    if not lmp_date:
+        ultima_visita = Visit.objects.filter(patient=patient, lmp_date__isnull=False).order_by('-visit_number').first()
+        if ultima_visita and ultima_visita.lmp_date:
+            lmp_date = ultima_visita.lmp_date.isoformat()
+            logger.info("Reutilizando lmp_date=%s de visita anterior para paciente %s", lmp_date, patient.dni)
     
     visit_payload = _omit_blanks({
         "patient": str(patient.id),
-        "bpm": int(bpm_val) if bpm_val not in (None, "") else None,
-        "hemoglobina": float(hb_val) if hb_val not in (None, "") else None,
-        "spo2": int(spo2_val) if spo2_val not in (None, "") else None,
-        "lmp_date": dobs.get("fechaUltimoPeriodo"),
+        "bpm": _coerce_float(bpm_val),
+        "hemoglobina": _coerce_float(hb_val),
+        "spo2": _coerce_float(spo2_val),
+        "lmp_date": lmp_date,
     })
 
     vs = VisitSerializer(data=visit_payload)
@@ -359,19 +400,22 @@ def mucosa_visita(request, dni: str):
     # Construye payload de visita (el número se asigna en signal)
     def _coerce_int(x):
         return int(x) if x not in (None, "",) else None
-    def _coerce_float(x):
-        if x in (None, ""):
-            return None
-        # Normalizar: reemplazar coma por punto para decimales
-        x_str = str(x).replace(',', '.')
-        return float(x_str)
+
+    lmp_date = dobs.get("fechaUltimoPeriodo")
+    
+    # Si no viene lmp_date, reutilizar de visita anterior del mismo paciente
+    if not lmp_date:
+        ultima_visita = Visit.objects.filter(patient=patient, lmp_date__isnull=False).order_by('-visit_number').first()
+        if ultima_visita and ultima_visita.lmp_date:
+            lmp_date = ultima_visita.lmp_date.isoformat()
+            logger.info("Reutilizando lmp_date=%s de visita anterior para paciente %s", lmp_date, patient.dni)
 
     visit_payload = {
         "patient": str(patient.id),
         "bpm": _coerce_int(dobs.get("pulsaciones")),
         "hemoglobina": _coerce_float(dobs.get("hemoglobina")),
         "spo2": _coerce_int(dobs.get("oxigeno")),
-        "lmp_date": dobs.get("fechaUltimoPeriodo"),
+        "lmp_date": lmp_date,
     }
 
     vs = VisitSerializer(data=visit_payload)

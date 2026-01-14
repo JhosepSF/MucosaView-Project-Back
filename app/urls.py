@@ -3,7 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
-from records.views import PatientViewSet, VisitViewSet, PhotoViewSet, media_by_hash, mucosa_registro, mucosa_fotos, mucosa_visita
+from records.views import PatientViewSet, VisitViewSet, PhotoViewSet, media_by_hash, mucosa_registro, mucosa_fotos, mucosa_visita, paciente_info
 from core.views import diagnostics
 
 router = DefaultRouter()
@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/diagnostics/", diagnostics, name="diagnostics"),
     path("api/media/by-hash/<str:sha256>", media_by_hash, name="media-by-hash"),
     path("api/mucosa/registro", mucosa_registro),
+    path("api/mucosa/registro/<str:dni>/info", paciente_info),
     path("api/mucosa/registro/<str:dni>/fotos", mucosa_fotos),
     path("api/mucosa/registro/<str:dni>/visita", mucosa_visita), 
 ]

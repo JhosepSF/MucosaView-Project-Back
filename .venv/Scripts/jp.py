@@ -1,4 +1,4 @@
-#!C:\Users\JhosepSF\Downloads\MucosaView\mucosaview-back\.venv\Scripts\python.exe
+#!C:\Users\JhosepSF\Downloads\MucosaView\Back\.venv\Scripts\python.exe
 
 import sys
 import json
