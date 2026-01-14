@@ -13,6 +13,7 @@ SECRET_KEY = 'django-insecure-ac!=&=@^2a)@v-2e_h5x7znxt(2@1ht#!fjs*8%p(dh6%kzm%@
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    "158.69.209.130",
     "127.0.0.1",
     "localhost",
     "192.168.18.25",
@@ -89,8 +90,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "mucosa_db",
-        "USER": "root", 
-        "PASSWORD": "", 
+        "USER": "mucosa_user", 
+        "PASSWORD": "mucosa_pass_2026", 
         "HOST": "127.0.0.1",
         "PORT": "3306",
         "OPTIONS": {
