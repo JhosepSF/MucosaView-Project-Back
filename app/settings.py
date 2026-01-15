@@ -91,7 +91,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "mucosa_db",
         "USER": "mucosa_user", 
-        "PASSWORD": "mucosa_pass_2026", 
+        "PASSWORD": "", 
         "HOST": "127.0.0.1",
         "PORT": "3306",
         "OPTIONS": {
