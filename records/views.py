@@ -145,6 +145,19 @@ def mucosa_registro(request):
 
     dp = data.get("datos_personales") or {}
     dobs = data.get("datos_obstetricos") or {}
+    nro_visita = data.get("nro_visita", 1)
+
+    patient_id = data.get("client_uuid")
+    dni_val = str(dp.get("dni", "")).strip()
+
+    # VALIDACIÓN: Si nro_visita=1, el paciente NO debe existir (registro nuevo)
+    if nro_visita == 1 and dni_val:
+        paciente_existente = Patient.objects.filter(dni=dni_val).first()
+        if paciente_existente:
+            return Response(
+                {"detail": f"Ya existe un paciente con DNI {dni_val}. Para agregar visitas usa 'Agregar fotos'."},
+                status=status.HTTP_409_CONFLICT
+            )
 
     patient_id = data.get("client_uuid")
 
