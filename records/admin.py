@@ -54,8 +54,9 @@ class VisitAdmin(admin.ModelAdmin):
         ("Paciente", {
             "fields": ("patient", "patient_link", "visit_number")
         }),
-        ("Datos Clínicos", {
-            "fields": ("bpm", "hemoglobina", "spo2", "lmp_date", "gestational_weeks")
+        ("Datos Obstétricos (Editables)", {
+            "fields": ("bpm", "hemoglobina", "spo2", "lmp_date", "gestational_weeks"),
+            "description": "Puedes editar estos campos. Las semanas de gestación se calculan automáticamente."
         }),
         ("Control de Versión", {
             "fields": ("version",),
@@ -114,10 +115,16 @@ class PhotoAdmin(admin.ModelAdmin):
             "fields": ("visit", "visit_link", "patient_link")
         }),
         ("Clasificación", {
-            "fields": ("type", "index")
+            "fields": ("type", "index"),
+            "description": "Tipo de foto y número de índice (1 o 2)"
         }),
-        ("Archivo", {
-            "fields": ("file", "preview", "original_name", "content_type", "size", "sha256")
+        ("Archivo de Imagen", {
+            "fields": ("file", "preview"),
+            "description": "📸 Puedes subir o reemplazar la imagen aquí. Formatos: PNG, JPG, JPEG"
+        }),
+        ("Información del Archivo (Auto)", {
+            "fields": ("original_name", "content_type", "size", "sha256"),
+            "classes": ("collapse",)
         }),
         ("Metadata", {
             "fields": ("id", "created_at"),
