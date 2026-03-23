@@ -6,15 +6,23 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import APIException
+from rest_framework.request import Request
 from rest_framework.decorators import api_view, permission_classes as drf_permission_classes, parser_classes
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 
 from .models import Patient, Visit, Photo
 from .serializers import PatientSerializer, VisitSerializer, PhotoSerializer
 
 logger = logging.getLogger("records") 
+
+
+class PhotoPagination(PageNumberPagination):
+    page_size = 24
+    page_size_query_param = "page_size"
+    max_page_size = 100
 
 
 def _coerce_float(x):
@@ -100,6 +108,33 @@ class PhotoViewSet(IdempotentUpsertMixin, viewsets.ModelViewSet):
     serializer_class = PhotoSerializer
     lookup_field = "pk"
     permission_classes = [AllowAny]
+    pagination_class = PhotoPagination
+
+    def get_queryset(self):
+        request = cast(Request, self.request)
+        queryset = self.queryset
+        visit_id = request.query_params.get("visit")
+        patient_id = request.query_params.get("patient")
+        dni = request.query_params.get("dni")
+        photo_type = request.query_params.get("type")
+        has_thumbnail = request.query_params.get("has_thumbnail")
+
+        if visit_id:
+            queryset = queryset.filter(visit_id=visit_id)
+        if patient_id:
+            queryset = queryset.filter(visit__patient_id=patient_id)
+        if dni:
+            queryset = queryset.filter(visit__patient__dni=str(dni).strip())
+        if photo_type:
+            queryset = queryset.filter(type=photo_type)
+        if has_thumbnail is not None:
+            wants_thumbnail = has_thumbnail.lower() in {"1", "true", "yes"}
+            if wants_thumbnail:
+                queryset = queryset.exclude(thumbnail="")
+            else:
+                queryset = queryset.filter(thumbnail="")
+
+        return queryset
 
 
 # === FBV fuera de la clase ===

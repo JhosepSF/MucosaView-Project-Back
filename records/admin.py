@@ -119,7 +119,7 @@ class PhotoAdmin(admin.ModelAdmin):
             "description": "Tipo de foto y número de índice (1 o 2)"
         }),
         ("Archivo de Imagen", {
-            "fields": ("file", "preview"),
+            "fields": ("file", "thumbnail", "preview"),
             "description": "📸 Puedes subir o reemplazar la imagen aquí. Formatos: PNG, JPG, JPEG"
         }),
         ("Información del Archivo (Auto)", {
@@ -133,8 +133,9 @@ class PhotoAdmin(admin.ModelAdmin):
     )
     
     def miniatura(self, obj):
-        if obj.file:
-            return format_html('<img src="{}" width="50" height="50" style="object-fit: cover; border-radius: 4px;" />', obj.file.url)
+        image_field = obj.thumbnail or obj.file
+        if image_field:
+            return format_html('<img src="{}" width="50" height="50" style="object-fit: cover; border-radius: 4px;" />', image_field.url)
         return "-"
     miniatura.short_description = "Vista"
     
@@ -170,8 +171,9 @@ class PhotoAdmin(admin.ModelAdmin):
     acciones.short_description = "Acciones"
     
     def preview(self, obj):
-        if obj.file:
-            return format_html('<img src="{}" style="max-width: 400px; max-height: 400px;" />', obj.file.url)
+        image_field = obj.thumbnail or obj.file
+        if image_field:
+            return format_html('<img src="{}" style="max-width: 400px; max-height: 400px;" />', image_field.url)
         return "-"
     preview.short_description = "Preview"
     

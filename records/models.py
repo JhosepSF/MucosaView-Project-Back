@@ -69,6 +69,13 @@ def photo_upload_to(instance, filename):
     base = f"{dni}_{tipo}_{v}_{n}{ext}"
     return f"photos/{dni}/{base}"
 
+
+def photo_thumbnail_upload_to(instance, filename):
+    source_path = Path(instance.file.name or filename)
+    dni = instance.visit.patient.dni
+    stem = source_path.stem or f"photo_{instance.pk}"
+    return f"photos/{dni}/thumbnails/{stem}.webp"
+
 class Photo(models.Model):
     TYPE_CONJ = "CONJ"
     TYPE_LAB = "LAB"
@@ -85,6 +92,7 @@ class Photo(models.Model):
     index = models.PositiveSmallIntegerField(default=1) # NmrFoto
 
     file = models.FileField(upload_to=photo_upload_to)
+    thumbnail = models.ImageField(upload_to=photo_thumbnail_upload_to, blank=True)
     original_name = models.CharField(max_length=255, blank=True)
     content_type = models.CharField(max_length=100, blank=True)
     size = models.PositiveIntegerField(default=0)

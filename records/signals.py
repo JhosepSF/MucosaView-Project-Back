@@ -2,9 +2,10 @@
 from django.db import transaction
 from django.db.models import Max
 import hashlib
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from .models import Visit, Photo
+from .image_utils import ensure_photo_thumbnail
 
 @receiver(pre_save, sender=Visit)
 def assign_visit_number(sender, instance: Visit, **kwargs):
@@ -34,3 +35,12 @@ def fill_photo_metadata(sender, instance: Photo, **kwargs):
             instance.size = instance.file.size
         except Exception:
             pass
+
+
+@receiver(post_save, sender=Photo)
+def generate_photo_thumbnail(sender, instance: Photo, **kwargs):
+    if not instance.file:
+        return
+    if instance.thumbnail and instance.thumbnail.storage.exists(instance.thumbnail.name):
+        return
+    ensure_photo_thumbnail(instance)

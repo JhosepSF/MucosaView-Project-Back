@@ -227,12 +227,27 @@ Back/
   "type": "CONJ",                 # CONJ | LAB | IND
   "index": 1,                     # 1 o 2
   "file": "photos/12345678/12345678_Conjuntiva_1_1.png",
+  "thumbnail": "photos/12345678/thumbnails/12345678_Conjuntiva_1_1.webp",
   "original_name": "IMG_0001.png",
   "content_type": "image/png",
   "size": 1500000,                # bytes
   "sha256": "abc123...",          # Hash para deduplicación
+  "file_url": "https://cdn.example.com/...png",
+  "thumbnail_url": "https://cdn.example.com/...webp",
+  "has_thumbnail": true,
   "created_at": "2026-01-08T10:00:00Z"
 }
+```
+
+### Generar thumbnails para fotos ya existentes
+```bash
+python manage.py backfill_photo_thumbnails --only-missing
+```
+
+Opciones útiles:
+```bash
+python manage.py backfill_photo_thumbnails --limit 500
+python manage.py backfill_photo_thumbnails --force
 ```
 
 ## 🎯 API Endpoints
@@ -530,13 +545,6 @@ python migrate_indice.py
 
 ## 📊 Panel de Administración
 
-Accede al admin de Django:
-```
-http://localhost:8000/admin/
-
-# Login con superusuario creado
-```
-
 **Modelos disponibles**:
 - ✅ Patients
 - ✅ Visits
@@ -639,7 +647,7 @@ Para más información:
 - **Issues**: Reportar en GitHub Issues
 
 ## 🔄 Versiones
-- **v1.0.0** - API REST completa con soporte offline-first
+- **v1.0.1** - API REST completa con soporte offline-first
   - Endpoints especializados para app móvil
   - Geocoding automático
   - Optimistic locking
