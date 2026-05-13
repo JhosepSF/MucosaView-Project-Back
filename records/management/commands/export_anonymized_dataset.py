@@ -109,19 +109,36 @@ class Command(BaseCommand):
                 # Copiar fotos si está habilitado
                 if include_photos:
                     for photo in photos:
-                        source_path = base_dir / photo.file.name
-                        if source_path.exists():
-                            # Crear estructura: photos/PAT_0001/Conjuntiva_1.jpg
-                            patient_photos_dir = photos_dir / anon_patient_id
-                            patient_photos_dir.mkdir(exist_ok=True)
-                            
-                            photo_type_name = photo.get_type_display()
-                            ext = Path(source_path).suffix
-                            dest_filename = f"{photo_type_name}_{photo.index}{ext}"
-                            dest_path = patient_photos_dir / dest_filename
-                            
-                            shutil.copy2(source_path, dest_path)
-                            self.stdout.write(f"  ✓ Copiada foto: {dest_filename}")
+                        # Intentar múltiples rutas posibles
+                        possible_paths = [
+                            base_dir / photo.file.name,  # BASE_DIR + ruta relativa
+                            Path(settings.MEDIA_ROOT) / photo.file.name if hasattr(settings, 'MEDIA_ROOT') else None,
+                            base_dir / "media" / photo.file.name,  # Fallback: media/ en el proyecto
+                        ]
+                        
+                        source_path = None
+                        for path in possible_paths:
+                            if path and path.exists():
+                                source_path = path
+                                break
+                        
+                        if source_path:
+                            try:
+                                # Crear estructura: photos/PAT_0001/Conjuntiva_1.jpg
+                                patient_photos_dir = photos_dir / anon_patient_id
+                                patient_photos_dir.mkdir(exist_ok=True)
+                                
+                                photo_type_name = photo.get_type_display()
+                                ext = Path(source_path).suffix
+                                dest_filename = f"{photo_type_name}_{photo.index}{ext}"
+                                dest_path = patient_photos_dir / dest_filename
+                                
+                                shutil.copy2(source_path, dest_path)
+                                self.stdout.write(f"  ✓ Copiada foto: {dest_filename}")
+                            except Exception as e:
+                                self.stdout.write(self.style.WARNING(f"  ⚠ Error copiando {photo.file.name}: {e}"))
+                        else:
+                            self.stdout.write(self.style.WARNING(f"  ⚠ Archivo no encontrado: {photo.file.name}"))
 
         # Crear archivo de mapeo de referencia (para auditoría, sin DNI real)
         mapping_path = output_dir / "MAPPING_REFERENCE.txt"
