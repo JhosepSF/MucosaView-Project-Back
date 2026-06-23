@@ -9,7 +9,7 @@ MYSQL_CNF="${MYSQL_CNF:-$HOME/.my.cnf}"
 PROJECT_DIR="${PROJECT_DIR:-/home/ubuntu/MucosaView-Project-Back}"
 MEDIA_DIR="${MEDIA_DIR:-$PROJECT_DIR/media/photos}"
 BACKUP_DIR="${BACKUP_DIR:-$PROJECT_DIR/copias_seguridad}"
-RETENTION_DAYS="${RETENTION_DAYS:-30}"
+RETENTION_DAYS="${RETENTION_DAYS:-3}"
 
 TIMESTAMP="$(date +"%Y-%m-%d_%H-%M-%S")"
 ZIP_NAME="backup-${TIMESTAMP}.zip"
