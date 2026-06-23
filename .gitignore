@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+media/
+staticfiles/
+copias_seguridad/
+temp_anonymized_dataset/
+anonymized_dataset.zip
+export_log.txt
